@@ -1,8 +1,10 @@
 import Phaser from 'phaser';
 import { Player } from '../entities/Player';
+import { VirtualJoystick } from '../entities/VirtualJoystick';
 
 export class GameScene extends Phaser.Scene {
   private player!: Player;
+  private joystick!: VirtualJoystick;
   private bullets!: Phaser.Physics.Arcade.Group;
   private enemies!: Phaser.Physics.Arcade.Group;
   private walls!: Phaser.Physics.Arcade.StaticGroup;
@@ -28,7 +30,8 @@ export class GameScene extends Phaser.Scene {
 
     this.enemies = this.physics.add.group();
 
-    this.player = new Player(this, 480, 320, this.bullets);
+    this.joystick = new VirtualJoystick(this, 140, 500);
+    this.player = new Player(this, 480, 320, this.bullets, this.joystick);
 
     this.physics.add.overlap(
       this.bullets,

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { VirtualJoystick } from './VirtualJoystick';
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
   private cursors!: {
@@ -10,15 +11,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private bullets!: Phaser.Physics.Arcade.Group;
   private lastFired = 0;
   private readonly FIRE_RATE = 200;
+  private joystick!: VirtualJoystick;
 
   constructor(
     scene: Phaser.Scene,
     x: number,
     y: number,
     bullets: Phaser.Physics.Arcade.Group,
+    joystick: VirtualJoystick,
   ) {
     super(scene, x, y, 'soldier');
     this.bullets = bullets;
+    this.joystick = joystick;
 
     scene.add.existing(this);
     scene.physics.add.existing(this);
@@ -40,29 +44,60 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     let vx = 0;
     let vy = 0;
 
+    // Keyboard input (desktop)
+    const kbInput = this.getKeyboardInput();
+    if (kbInput.vx !== 0 || kbInput.vy !== 0) {
+      vx = kbInput.vx;
+      vy = kbInput.vy;
+    } else if (this.joystick.isActive) {
+      // Joystick input (mobile)
+      vx = this.joystick.forceX * speed;
+      vy = this.joystick.forceY * speed;
+    }
+
+    this.setVelocity(vx, vy);
+
+    // Aim: towards mouse on desktop, towards joystick direction on mobile
+    const pointer = this.scene.input.activePointer;
+    const pointerInRightHalf = pointer.worldX >= this.scene.scale.width / 2;
+
+    if (this.joystick.isActive && pointerInRightHalf) {
+      // On mobile: aim and shoot towards the tap on right side
+      const angle = Phaser.Math.Angle.Between(this.x, this.y, pointer.worldX, pointer.worldY);
+      this.setRotation(angle);
+      if (pointer.isDown && time - this.lastFired > this.FIRE_RATE) {
+        this.fire(time, angle);
+      }
+    } else if (kbInput.vx !== 0 || kbInput.vy !== 0 || !this.joystick.isActive) {
+      // Desktop or no joystick: aim at mouse cursor
+      const angle = Phaser.Math.Angle.Between(this.x, this.y, pointer.worldX, pointer.worldY);
+      this.setRotation(angle);
+      if (pointer.isDown && time - this.lastFired > this.FIRE_RATE) {
+        this.fire(time, angle);
+      }
+    } else if (this.joystick.isActive && this.joystick.forceX !== 0 && this.joystick.forceY !== 0) {
+      // Mobile: auto-aim in movement direction
+      const angle = Math.atan2(this.joystick.forceY, this.joystick.forceX);
+      this.setRotation(angle);
+    }
+  }
+
+  private getKeyboardInput(): { vx: number; vy: number } {
+    const speed = 160;
+    let vx = 0;
+    let vy = 0;
+
     if (this.cursors.a.isDown) vx = -speed;
     if (this.cursors.d.isDown) vx = speed;
     if (this.cursors.w.isDown) vy = -speed;
     if (this.cursors.s.isDown) vy = speed;
 
-    // Normalise diagonal movement
     if (vx !== 0 && vy !== 0) {
-      const factor = Math.SQRT1_2;
-      vx *= factor;
-      vy *= factor;
+      vx *= Math.SQRT1_2;
+      vy *= Math.SQRT1_2;
     }
 
-    this.setVelocity(vx, vy);
-
-    // Aim towards mouse
-    const pointer = this.scene.input.activePointer;
-    const angle = Phaser.Math.Angle.Between(this.x, this.y, pointer.worldX, pointer.worldY);
-    this.setRotation(angle);
-
-    // Shoot
-    if (pointer.isDown && time - this.lastFired > this.FIRE_RATE) {
-      this.fire(time, angle);
-    }
+    return { vx, vy };
   }
 
   private fire(time: number, angle: number): void {
