@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { Player } from '../entities/Player';
 import { VirtualJoystick } from '../entities/VirtualJoystick';
+import { FullscreenButton } from '../entities/FullscreenButton';
 
 export class GameScene extends Phaser.Scene {
   private player!: Player;
@@ -65,6 +66,9 @@ export class GameScene extends Phaser.Scene {
       stroke: '#000000',
       strokeThickness: 3,
     }).setDepth(100);
+
+    // Fullscreen button (top-right corner)
+    new FullscreenButton(this, 930, 24);
   }
 
   update(time: number): void {
