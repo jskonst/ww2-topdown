@@ -34,7 +34,8 @@ export class VirtualJoystick {
   }
 
   private onPointerDown(pointer: Phaser.Input.Pointer): void {
-    // Only activate if touching left half of screen
+    // Only activate if touching left half of screen AND joystick is not already active
+    if (this.active) return;
     if (pointer.worldX < this.scene.scale.width / 2) {
       this.active = true;
       this.pointerId = pointer.id;
@@ -84,5 +85,10 @@ export class VirtualJoystick {
 
   get isActive(): boolean {
     return this.active;
+  }
+
+  /** ID of the pointer currently controlling the joystick, or -1 if inactive */
+  get trackedPointerId(): number {
+    return this.pointerId;
   }
 }

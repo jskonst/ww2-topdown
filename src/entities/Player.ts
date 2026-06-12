@@ -67,14 +67,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         const moveAngle = Math.atan2(this.joystick.forceY, this.joystick.forceX);
         this.setRotation(moveAngle);
       }
-      // Fire towards tap on right half (auto-fire while held)
-      // Check all active pointers (not just activePointer, which flips between fingers on multi-touch)
+      // Fire towards any tap on screen (not just right half)
+      // Check all pointers except the joystick's own tracked finger
       for (const p of [this.scene.input.pointer1, this.scene.input.pointer2]) {
-        if (p?.isDown && p.worldX >= this.scene.scale.width / 2) {
-          // Shoot in the direction the player is facing (joystick direction), not towards the tap
-          const facingAngle = this.rotation;
+        if (p?.isDown && p.id !== this.joystick.trackedPointerId) {
+          // Shoot towards the tap position
+          const shootAngle = Phaser.Math.Angle.Between(this.x, this.y, p.worldX, p.worldY);
           if (time - this.lastFired > this.FIRE_RATE) {
-            this.fire(time, facingAngle);
+            this.fire(time, shootAngle);
           }
           break;
         }
