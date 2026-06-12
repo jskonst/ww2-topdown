@@ -59,7 +59,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Aim: towards mouse on desktop, towards joystick direction on mobile
     const pointer = this.scene.input.activePointer;
-    const pointerInRightHalf = pointer.worldX >= this.scene.scale.width / 2;
     const joystickMoving = this.joystick.forceX !== 0 || this.joystick.forceY !== 0;
 
     if (this.joystick.isActive) {
@@ -69,10 +68,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.setRotation(moveAngle);
       }
       // Fire towards tap on right half (auto-fire while held)
-      if (pointerInRightHalf && pointer.isDown) {
-        const shootAngle = Phaser.Math.Angle.Between(this.x, this.y, pointer.worldX, pointer.worldY);
-        if (time - this.lastFired > this.FIRE_RATE) {
-          this.fire(time, shootAngle);
+      // Check all active pointers (not just activePointer, which flips between fingers on multi-touch)
+      for (const p of [this.scene.input.pointer1, this.scene.input.pointer2]) {
+        if (p?.isDown && p.worldX >= this.scene.scale.width / 2) {
+          const shootAngle = Phaser.Math.Angle.Between(this.x, this.y, p.worldX, p.worldY);
+          if (time - this.lastFired > this.FIRE_RATE) {
+            this.fire(time, shootAngle);
+          }
+          break;
         }
       }
     } else {
