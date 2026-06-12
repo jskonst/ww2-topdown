@@ -60,25 +60,28 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     // Aim: towards mouse on desktop, towards joystick direction on mobile
     const pointer = this.scene.input.activePointer;
     const pointerInRightHalf = pointer.worldX >= this.scene.scale.width / 2;
+    const joystickMoving = this.joystick.forceX !== 0 || this.joystick.forceY !== 0;
 
-    if (this.joystick.isActive && pointerInRightHalf) {
-      // On mobile: aim and shoot towards the tap on right side
+    if (this.joystick.isActive) {
+      // Mobile: face always in movement direction
+      if (joystickMoving) {
+        const moveAngle = Math.atan2(this.joystick.forceY, this.joystick.forceX);
+        this.setRotation(moveAngle);
+      }
+      // Fire towards tap on right half (auto-fire while held)
+      if (pointerInRightHalf && pointer.isDown) {
+        const shootAngle = Phaser.Math.Angle.Between(this.x, this.y, pointer.worldX, pointer.worldY);
+        if (time - this.lastFired > this.FIRE_RATE) {
+          this.fire(time, shootAngle);
+        }
+      }
+    } else {
+      // Desktop: aim at mouse cursor
       const angle = Phaser.Math.Angle.Between(this.x, this.y, pointer.worldX, pointer.worldY);
       this.setRotation(angle);
       if (pointer.isDown && time - this.lastFired > this.FIRE_RATE) {
         this.fire(time, angle);
       }
-    } else if (kbInput.vx !== 0 || kbInput.vy !== 0 || !this.joystick.isActive) {
-      // Desktop or no joystick: aim at mouse cursor
-      const angle = Phaser.Math.Angle.Between(this.x, this.y, pointer.worldX, pointer.worldY);
-      this.setRotation(angle);
-      if (pointer.isDown && time - this.lastFired > this.FIRE_RATE) {
-        this.fire(time, angle);
-      }
-    } else if (this.joystick.isActive && this.joystick.forceX !== 0 && this.joystick.forceY !== 0) {
-      // Mobile: auto-aim in movement direction
-      const angle = Math.atan2(this.joystick.forceY, this.joystick.forceX);
-      this.setRotation(angle);
     }
   }
 
