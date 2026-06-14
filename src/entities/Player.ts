@@ -113,7 +113,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const bullet = this.bullets.get(this.x, this.y, 'bullet') as Phaser.Physics.Arcade.Sprite | null;
     if (!bullet) return;
 
+    const body = bullet.body as Phaser.Physics.Arcade.Body;
+    if (body) body.enable = true;
+
     bullet.setActive(true).setVisible(true);
+    bullet.setPosition(this.x, this.y);
     bullet.setRotation(angle);
     bullet.setVelocity(
       Math.cos(angle) * 500,
